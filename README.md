@@ -1,2 +1,2 @@
-Old code from SI days
-
+This is old Perl and bash scripts from my time at Software Integrators
+URL's logins and passwords have been removed.

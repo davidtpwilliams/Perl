@@ -1,0 +1,59 @@
+#!/bin/sh
+# Apply a new iptables setting for a set amount of time then roll back
+DURATION=$1"m"  #Duration is in minutes
+CURRENT=$2
+OZ_IP=$3
+LOGFILE=/var/log/iptables.swap
+EXPECTED_ARGS=3
+E_BADARGS=65
+
+cd /etc/sysconfig
+echo `pwd`
+echo "$DURATION - $CURRENT - $OZ_IP"
+
+# Check arguments
+if [ $# -ne $EXPECTED_ARGS ]
+then
+  echo "Usage: `basename $0` duration no_ip_restriction_file oz_only_file"
+  exit $E_BADARGS
+fi
+
+if [ -f $CURRENT ]; then
+   echo "File '$CURRENT' Exists"
+else
+   echo "The File '$CURRENT' Does Not Exist"
+   exit 1
+fi
+
+if [ -f $OZ_IP ]; then
+   echo "File '$OZ_IP' Exists"
+else
+   echo "The File '$OZ_IP' Does Not Exist"
+   exit 2
+fi
+
+# Copy old iptables to iptables.current
+# Then use new iptables with Oz IP addresses
+echo "" >> $LOGFILE
+echo "==============================================" >> $LOGFILE
+echo `date` >> $LOGFILE
+
+cp iptables iptables.current
+cp $OZ_IP iptables
+service iptables restart > out1; cat out1 >> $LOGFILE 2>&1
+service fail2ban restart > out1; cat out1 >> $LOGFILE 2>&1
+
+echo "$OZ_IP is now the current iptables"  >> $LOGFILE
+echo "Sleeping for $DURATION minutes"  >> $LOGFILE
+echo "zzzzzzzzzzzzzzzz......" >> $LOGFILE
+echo "zzzzzzzzzzzzzzz......." >> $LOGFILE
+echo "........." >> $LOGFILE
+sleep $DURATION
+
+#Copy clean version of iptables back
+echo "Restoring original file"  >> $LOGFILE
+cp $CURRENT iptables
+service iptables restart >> $LOGFILE 2>&1
+service fail2ban restart >> $LOGFILE 2>&1
+echo "Restored at `date`"  >> $LOGFILE
+
